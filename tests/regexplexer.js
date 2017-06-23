@@ -2,6 +2,7 @@ var assert = require("chai").assert;
 var RegExpLexer = require("../regexp-lexer");
 var XRegExp = require("xregexp");
 
+
 function re2set(re) {
   var xr = new XRegExp(re);
   var xs = '' +  xr;

@@ -2047,7 +2047,136 @@ function expandParseArguments(parseFn, options) {
 
 // The lexer code stripper, driven by optimization analysis settings and
 // lexer options, which cannot be changed at run-time.
-function stripUnusedLexerCode(src, options) {
+function stripUnusedLexerCode(src, opt) {
+    var recast = require('recast');
+    var types = recast.types;
+    assert(types);
+    var namedTypes = types.namedTypes;
+    assert(namedTypes);
+    var b = types.builders;
+    assert(b);
+    var utils = require('ast-util');
+    assert(utils);
+
+    //   uses yyleng: ..................... ${opt.lexerActionsUseYYLENG}
+    //   uses yylineno: ................... ${opt.lexerActionsUseYYLINENO}
+    //   uses yytext: ..................... ${opt.lexerActionsUseYYTEXT}
+    //   uses yylloc: ..................... ${opt.lexerActionsUseYYLOC}
+    //   uses ParseError API: ............. ${opt.lexerActionsUseParseError}
+    //   uses location tracking & editing:  ${opt.lexerActionsUseLocationTracking}
+    //   uses more() API: ................. ${opt.lexerActionsUseMore}
+    //   uses unput() API: ................ ${opt.lexerActionsUseUnput}
+    //   uses reject() API: ............... ${opt.lexerActionsUseReject}
+    //   uses less() API: ................. ${opt.lexerActionsUseLess}
+    //   uses display APIs pastInput(), upcomingInput(), showPosition():
+    //        ............................. ${opt.lexerActionsUseDisplayAPIs}
+    //   uses describeYYLLOC() API: ....... ${opt.lexerActionsUseDescribeYYLOC}
+
+    var code = recast.parse(src);
+
+if (0) {
+    this.actionsUseYYLENG = analyzeFeatureUsage(this.performAction, /\byyleng\b/g, 1);
+    this.actionsUseYYLINENO = analyzeFeatureUsage(this.performAction, /\byylineno\b/g, 1);
+    this.actionsUseYYTEXT = analyzeFeatureUsage(this.performAction, /\byytext\b/g, 1);
+    this.actionsUseYYLOC = analyzeFeatureUsage(this.performAction, /\byyloc\b/g, 1);
+    this.actionsUseParseError = analyzeFeatureUsage(this.performAction, /\.parseError\b/g, 0);
+
+    this.actionsUseValueTracking = analyzeFeatureUsage(this.performAction, /\byyvstack\b/g, 1);
+    // Ditto for the specific case where we are assigning a value to `$$`, i.e. `this.$`:
+    this.actionsUseValueAssignment = analyzeFeatureUsage(this.performAction, /\bthis\.\$[^\w]/g, 0);
+    // Ditto for the expansion of `@name`, `@$` and `@n` to its `yylstack[n]` index expression:
+    this.actionsUseLocationTracking = analyzeFeatureUsage(this.performAction, /\byylstack\b/g, 1);
+    // Ditto for the specific case where we are assigning a value to `@$`, i.e. `this._$`:
+    this.actionsUseLocationAssignment = analyzeFeatureUsage(this.performAction, /\bthis\._\$[^\w]/g, 0);
+    // Note that the `#name`, `#$` and `#n` constructs are expanded directly to their symbol number without
+    // the need to use yystack! Hence yystack is only there for very special use action code.)
+
+
+    if (devDebug || this.DEBUG) {
+        Jison.print('Optimization analysis: ', {
+            actionsAreAllDefault: this.actionsAreAllDefault,
+            actionsUseYYLENG: this.actionsUseYYLENG,
+            actionsUseYYLINENO: this.actionsUseYYLINENO,
+            actionsUseYYTEXT: this.actionsUseYYTEXT,
+            actionsUseYYLOC: this.actionsUseYYLOC,
+            actionsUseParseError: this.actionsUseParseError,
+            actionsUseYYERROR: this.actionsUseYYERROR,
+            actionsUseYYRECOVERING: this.actionsUseYYRECOVERING,
+            actionsUseYYERROK: this.actionsUseYYERROK,
+            actionsUseYYCLEARIN: this.actionsUseYYCLEARIN,
+            actionsUseValueTracking: this.actionsUseValueTracking,
+            actionsUseValueAssignment: this.actionsUseValueAssignment,
+            actionsUseLocationTracking: this.actionsUseLocationTracking,
+            actionsUseLocationAssignment: this.actionsUseLocationAssignment,
+            actionsUseYYSTACK: this.actionsUseYYSTACK,
+            actionsUseYYSSTACK: this.actionsUseYYSSTACK,
+            actionsUseYYSTACKPOINTER: this.actionsUseYYSTACKPOINTER,
+            hasErrorRecovery: this.hasErrorRecovery,
+            noDefaultAction: this.options.noDefaultAction,
+            noTryCatch: this.options.noTryCatch,
+        });
+    }
+
+
+    function analyzeFeatureUsage(sourcecode, feature, threshold) {
+        var found = sourcecode.match(feature);
+        return !!(found && found.length > threshold);
+    }
+}
+
+
+
+
+
+
+
+
+    // inject analysis report now:
+    src = src.replace(/\/\*JISON-LEX-ANALYTICS-REPORT\*\//g, `
+    // Code Generator Information Report
+    // ---------------------------------
+    //
+    // Options:
+    //
+    //   backtracking:        ${opt.options.backtrack_lexer}
+    //   location.ranges:     ${opt.options.ranges}
+    //
+    //
+    // Forwarded Parser Analysis flags:
+    //
+    //   uses yyleng: ..................... ${opt.parseActionsUseYYLENG}
+    //   uses yylineno: ................... ${opt.parseActionsUseYYLINENO}
+    //   uses yytext: ..................... ${opt.parseActionsUseYYTEXT}
+    //   uses yylloc: ..................... ${opt.parseActionsUseYYLOC}
+    //   uses lexer values: ............... ${opt.parseActionsUseValueTracking} / ${opt.parseActionsUseValueAssignment}
+    //   location tracking: ............... ${opt.parseActionsUseLocationTracking}
+    //   location assignment: ............. ${opt.parseActionsUseLocationAssignment}
+    //
+    //
+    // Lexer Analysis flags:
+    //
+    //   uses yyleng: ..................... ${opt.lexerActionsUseYYLENG}
+    //   uses yylineno: ................... ${opt.lexerActionsUseYYLINENO}
+    //   uses yytext: ..................... ${opt.lexerActionsUseYYTEXT}
+    //   uses yylloc: ..................... ${opt.lexerActionsUseYYLOC}
+    //   uses ParseError API: ............. ${opt.lexerActionsUseParseError}
+    //   uses location tracking & editing:  ${opt.lexerActionsUseLocationTracking}
+    //   uses more() API: ................. ${opt.lexerActionsUseMore}
+    //   uses unput() API: ................ ${opt.lexerActionsUseUnput}
+    //   uses reject() API: ............... ${opt.lexerActionsUseReject}
+    //   uses less() API: ................. ${opt.lexerActionsUseLess}
+    //   uses display APIs pastInput(), upcomingInput(), showPosition():
+    //        ............................. ${opt.lexerActionsUseDisplayAPIs}
+    //   uses describeYYLLOC() API: ....... ${opt.lexerActionsUseDescribeYYLOC}
+    //
+    // --------- END OF REPORT -----------
+
+`);
+
+
+
+
+
     return src;
 }
 
@@ -2119,6 +2248,9 @@ function processGrammar(dict, tokens, build_options) {
     opts.caseHelperInclude = code.caseHelperInclude;
     opts.rules = code.rules;
     opts.macros = code.macros;
+
+    opts.regular_rule_count = code.regular_rule_count;
+    opts.simple_rule_count = code.simple_rule_count;
 
     opts.conditionStack = ['INITIAL'];
 
@@ -2259,7 +2391,7 @@ function generateModuleBody(opt) {
         // JavaScript is fine with that.
         var code = [`
 var lexer = {
-`, '' /* slot #1: placeholder for analysis report further below */];
+`, '/*JISON-LEX-ANALYTICS-REPORT*/' /* slot #1: placeholder for analysis report further below */];
 
         // get the RegExpLexer.prototype in source code form:
         var protosrc = printFunctionSourceCodeContainer(getRegExpLexerPrototype, 1);
@@ -2268,7 +2400,6 @@ var lexer = {
         .replace(/^[\s\r\n]*return[\s\r\n]*\{/, '')
         .replace(/\s*\};[\s\r\n]*$/, '');
         protosrc = expandParseArguments(protosrc, opt.options);
-        protosrc = stripUnusedLexerCode(protosrc, opt);
         code.push(protosrc + ',\n');
 
         assert(opt.options);
@@ -2292,47 +2423,7 @@ var lexer = {
 };
 `);
 
-        // inject analysis report now:
-        code[1] = `
-    // Code Generator Information Report
-    // ---------------------------------
-    //
-    // Options:
-    //
-    //   backtracking:        ${opt.options.backtrack_lexer}
-    //   location.ranges:     ${opt.options.ranges}
-    //
-    //
-    // Forwarded Parser Analysis flags:
-    //
-    //   uses yyleng: ..................... ${opt.parseActionsUseYYLENG}
-    //   uses yylineno: ................... ${opt.parseActionsUseYYLINENO}
-    //   uses yytext: ..................... ${opt.parseActionsUseYYTEXT}
-    //   uses yylloc: ..................... ${opt.parseActionsUseYYLOC}
-    //   uses lexer values: ............... ${opt.parseActionsUseValueTracking} / ${opt.parseActionsUseValueAssignment}
-    //   location tracking: ............... ${opt.parseActionsUseLocationTracking}
-    //   location assignment: ............. ${opt.parseActionsUseLocationAssignment}
-    //
-    //
-    // Lexer Analysis flags:
-    //
-    //   uses yyleng: ..................... ${opt.lexerActionsUseYYLENG}
-    //   uses yylineno: ................... ${opt.lexerActionsUseYYLINENO}
-    //   uses yytext: ..................... ${opt.lexerActionsUseYYTEXT}
-    //   uses yylloc: ..................... ${opt.lexerActionsUseYYLOC}
-    //   uses ParseError API: ............. ${opt.lexerActionsUseParseError}
-    //   uses location tracking & editing:  ${opt.lexerActionsUseLocationTracking}
-    //   uses more() API: ................. ${opt.lexerActionsUseMore}
-    //   uses unput() API: ................ ${opt.lexerActionsUseUnput}
-    //   uses reject() API: ............... ${opt.lexerActionsUseReject}
-    //   uses less() API: ................. ${opt.lexerActionsUseLess}
-    //   uses display APIs pastInput(), upcomingInput(), showPosition():
-    //        ............................. ${opt.lexerActionsUseDisplayAPIs}
-    //   uses describeYYLLOC() API: ....... ${opt.lexerActionsUseDescribeYYLOC}
-    //
-    // --------- END OF REPORT -----------
-
-`;
+        opt.is_custom_lexer = false;
 
         out = code.join('');
     } else {
@@ -2343,6 +2434,10 @@ var lexer = {
         // Meanwhile we make sure we have the `lexer` variable declared in *local scope* no matter
         // what crazy stuff (or lack thereof) the userland code is pulling in the `actionInclude` chunk.
         out = 'var lexer;\n';
+
+        assert(opt.regular_rule_count === 0);
+        assert(opt.simple_rule_count === 0);
+        opt.is_custom_lexer = true;
 
         if (opt.actionInclude) {
             out += opt.actionInclude + (!opt.actionInclude.match(/;[\s\r\n]*$/) ? ';' : '') + '\n';
@@ -2569,7 +2664,7 @@ function generateModule(opt) {
         '})();'
     ];
 
-    return out.join('\n');
+    return stripUnusedLexerCode(out.join('\n'), opt);
 }
 
 function generateAMDModule(opt) {
@@ -2589,7 +2684,7 @@ function generateAMDModule(opt) {
         '});'
     ];
 
-    return out.join('\n');
+    return stripUnusedLexerCode(out.join('\n'), opt);
 }
 
 function generateESModule(opt) {
@@ -2611,7 +2706,7 @@ function generateESModule(opt) {
         'export {lexer};'
     ];
 
-    return out.join('\n');
+    return stripUnusedLexerCode(out.join('\n'), opt);
 }
 
 function generateCommonJSModule(opt) {
@@ -2638,7 +2733,7 @@ function generateCommonJSModule(opt) {
         '}'
     ];
 
-    return out.join('\n');
+    return stripUnusedLexerCode(out.join('\n'), opt);
 }
 
 RegExpLexer.generate = generate;
