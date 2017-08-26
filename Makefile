@@ -7,6 +7,7 @@ npm-install:
 	npm install
 
 build:
+	node __patch_version_in_js.js
 
 test:
 	node_modules/.bin/mocha tests/
@@ -28,6 +29,7 @@ git-tag:
 
 clean:
 	-rm -rf node_modules/
+	-rm -f package-lock.json
 	-rm -rf examples/output/
 
 superclean: clean
