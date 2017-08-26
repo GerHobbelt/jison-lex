@@ -1873,7 +1873,7 @@ function getRegExpLexerPrototype() {
                 if (lines.length > 1) {
                     this.yylineno += lines.length - 1;
 
-                    this.yylloc.last_line = this.yylineno + 1,
+                    this.yylloc.last_line = this.yylineno + 1;
                     this.yylloc.last_column = lines[lines.length - 1].length;
                 } else {
                     this.yylloc.last_column += match_str_len;
@@ -2165,7 +2165,12 @@ function stripUnusedLexerCode(src, opt) {
     //        ............................. ${opt.lexerActionsUseDisplayAPIs}
     //   uses describeYYLLOC() API: ....... ${opt.lexerActionsUseDescribeYYLOC}
 
-    var code = recast.parse(src);
+    var ast = recast.parse(src);
+    var new_src = recast.prettyPrint(ast, { 
+        tabWidth: 2,
+        quote: 'single',
+        arrowParensAlways: true,
+    }).code;
 
 if (0) {
     this.actionsUseYYLENG = analyzeFeatureUsage(this.performAction, /\byyleng\b/g, 1);
@@ -2225,7 +2230,7 @@ if (0) {
 
 
     // inject analysis report now:
-    src = src.replace(/\/\*JISON-LEX-ANALYTICS-REPORT\*\//g, `
+    new_src = new_src.replace(/\/\*JISON-LEX-ANALYTICS-REPORT\*\//g, `
     // Code Generator Information Report
     // ---------------------------------
     //
@@ -2268,11 +2273,7 @@ if (0) {
 
 `);
 
-
-
-
-
-    return src;
+    return new_src;
 }
 
 
