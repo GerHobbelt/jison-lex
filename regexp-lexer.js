@@ -1341,9 +1341,9 @@ function getRegExpLexerPrototype() {
             }
             if (this.yy) {
                 if (this.yy.parser && typeof this.yy.parser.parseError === 'function') {
-                    return this.yy.parser.parseError(str, hash, ExceptionClass) || this.ERROR;
+                    return this.yy.parser.parseError.call(this, str, hash, ExceptionClass) || this.ERROR;
                 } else if (typeof this.yy.parseError === 'function') {
-                    return this.yy.parseError(str, hash, ExceptionClass) || this.ERROR;
+                    return this.yy.parseError.call(this, str, hash, ExceptionClass) || this.ERROR;
                 } 
             }
             throw new ExceptionClass(str, hash);
@@ -1426,7 +1426,7 @@ function getRegExpLexerPrototype() {
                 last_line: this.yylineno + 1,
                 last_column: col,
 
-                range: (this.options.ranges ? [this.offset, this.offset] : undefined)
+                range: [this.offset, this.offset]
             };
         },
 
@@ -1494,7 +1494,7 @@ function getRegExpLexerPrototype() {
                 last_line: 1,
                 last_column: 0,
 
-                range: (this.options.ranges ? [0, 0] : undefined)
+                range: [0, 0]
             };
             this.offset = 0;
             return this;
@@ -1538,7 +1538,7 @@ function getRegExpLexerPrototype() {
                 last_line: 1,
                 last_column: 0,
 
-                range: (this.options.ranges ? [0, 0] : undefined)
+                range: [0, 0]
             };
             this.offset = 0;
             return this;
@@ -1580,9 +1580,7 @@ function getRegExpLexerPrototype() {
                     this.offset++;
                     this.match += ch2;
                     this.matched += ch2;
-                    if (this.options.ranges) {
-                        this.yylloc.range[1]++;
-                    }
+                    this.yylloc.range[1]++;
                 }
             }
             if (lines) {
@@ -1592,9 +1590,7 @@ function getRegExpLexerPrototype() {
             } else {
                 this.yylloc.last_column++;
             }
-            if (this.options.ranges) {
-                this.yylloc.range[1]++;
-            }
+            this.yylloc.range[1]++;
 
             this._input = this._input.slice(slice_len);
             return ch;
@@ -1632,9 +1628,8 @@ function getRegExpLexerPrototype() {
                 this.yylloc.last_column -= len;
             }
 
-            if (this.options.ranges) {
-                this.yylloc.range[1] = this.yylloc.range[0] + this.yyleng;
-            }
+            this.yylloc.range[1] = this.yylloc.range[0] + this.yyleng;
+
             this.done = false;
             return this;
         },
@@ -1854,7 +1849,7 @@ function getRegExpLexerPrototype() {
                         first_column: this.yylloc.first_column,
                         last_column: this.yylloc.last_column,
 
-                        range: (this.options.ranges ? this.yylloc.range.slice(0) :  undefined)
+                        range: this.yylloc.range.slice(0)
                     },
                     yytext: this.yytext,
                     match: this.match,
@@ -1888,9 +1883,8 @@ function getRegExpLexerPrototype() {
             this.match += match_str;
             this.matches = match;
             this.yyleng = this.yytext.length;
-            if (this.options.ranges) {
-                this.yylloc.range[1] += match_str_len;
-            }
+            this.yylloc.range[1] += match_str_len;
+
             // previous lex rules MAY have invoked the `more()` API rather than producing a token:
             // those rules will already have moved this `offset` forward matching their match lengths,
             // hence we must only add our own match length now:
